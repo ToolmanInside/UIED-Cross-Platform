@@ -41,11 +41,11 @@ def compo_detection(input_img_path, output_root, uied_params,
                     resize_by_height=800, classifier=None, show=False, wai_key=0):
 
     start = time.clock()
-    name = input_img_path.replace('\\', '/').split('/')[-1][:-4]
-    ip_root = file.build_directory(pjoin(output_root, "ip"))
+    # name = input_img_path.replace('\\', '/').split('/')[-1][:-4]
+    # ip_root = file.build_directory(pjoin(output_root, "ip"))
 
     # *** Step 1 *** pre-processing: read img -> get binary map
-    org, grey = pre.read_img(input_img_path, resize_by_height)
+    org, grey = pre.read_img_2(input_img_path, resize_by_height) 
     binary = pre.binarization(org, grad_min=int(uied_params['min-grad']))
 
     # *** Step 2 *** element detection
@@ -64,7 +64,7 @@ def compo_detection(input_img_path, output_root, uied_params,
     # *** Step 4 ** nesting inspection: check if big compos have nesting element
     uicompos += nesting_inspection(org, grey, uicompos, ffl_block=uied_params['ffl-block'])
     Compo.compos_update(uicompos, org.shape)
-    board = draw.draw_bounding_box(org, uicompos, show=show, name='merged compo', write_path=pjoin(ip_root, name + '.jpg'), wait_key=wai_key)
+    board = draw.draw_bounding_box(org, uicompos, show=show, name='merged compo', write_path=None, wait_key=wai_key)
 
     # *** Step 5 *** image inspection: recognize image -> remove noise in image -> binarize with larger threshold and reverse -> rectangular compo detection
     # if classifier is not None:
@@ -87,6 +87,6 @@ def compo_detection(input_img_path, output_root, uied_params,
 
     # *** Step 7 *** save detection result
     Compo.compos_update(uicompos, org.shape)
-    file.save_corners_json(pjoin(ip_root, name + '.json'), uicompos)
-    print("[Compo Detection Completed in %.3f s] Input: %s Output: %s" % (time.clock() - start, input_img_path, pjoin(ip_root, name + '.json')))
-    return board
+    # file.save_corners_json(pjoin(ip_root, name + '.json'), uicompos)
+    # print("[Compo Detection Completed in %.3f s] Input: %s Output: %s" % (time.clock() - start, input_img_path, pjoin(ip_root, name + '.json')))
+    return file.return_corners_json(uicompos)

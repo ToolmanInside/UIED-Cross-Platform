@@ -5,6 +5,7 @@ from os.path import join as pjoin
 import os
 import time
 import shutil
+from logzero import logger
 
 from detect_merge.Element import Element
 
@@ -33,6 +34,14 @@ def save_elements(output_file, elements, img_shape):
         # c['id'] = i
         components['compos'].append(c)
     json.dump(components, open(output_file, 'w'), indent=4)
+    return components
+
+def save_elements_2(elements, img_shape):
+    components = {'compos': [], 'img_shape': img_shape}
+    for i, ele in enumerate(elements):
+        c = ele.wrap_info()
+        # c['id'] = i
+        components['compos'].append(c)
     return components
 
 
@@ -193,8 +202,10 @@ def compos_clip_and_fill(clip_root, org, compos):
 
 
 def merge(img_path, compo_path, text_path, merge_root=None, is_paragraph=False, is_remove_bar=True, show=False, wait_key=0):
-    compo_json = json.load(open(compo_path, 'r'))
-    text_json = json.load(open(text_path, 'r'))
+    # compo_json = json.load(open(compo_path, 'r'))
+    # text_json = json.load(open(text_path, 'r'))
+    compo_json = compo_path
+    text_json = text_path
 
     # load text and non-text compo
     ele_id = 0
@@ -214,7 +225,8 @@ def merge(img_path, compo_path, text_path, merge_root=None, is_paragraph=False, 
             text.resize(resize_ratio)
 
     # check the original detected elements
-    img = cv2.imread(img_path)
+    # img = cv2.imread(img_path)
+    img = img_path
     img_resize = cv2.resize(img, (compo_json['img_shape'][1], compo_json['img_shape'][0]))
     show_elements(img_resize, texts + compos, show=show, win_name='all elements before merging', wait_key=wait_key)
 
@@ -231,8 +243,10 @@ def merge(img_path, compo_path, text_path, merge_root=None, is_paragraph=False, 
     board = show_elements(img_resize, elements, show=show, win_name='elements after merging', wait_key=wait_key)
 
     # save all merged elements, clips and blank background
-    name = img_path.replace('\\', '/').split('/')[-1][:-4]
-    components = save_elements(pjoin(merge_root, name + '.json'), elements, img_resize.shape)
-    cv2.imwrite(pjoin(merge_root, name + '.jpg'), board)
-    print('[Merge Completed] Input: %s Output: %s' % (img_path, pjoin(merge_root, name + '.jpg')))
+    # name = img_path.replace('\\', '/').split('/')[-1][:-4]
+    # components = save_elements(pjoin(merge_root, name + '.json'), elements, img_resize.shape)
+    components = save_elements_2(elements, img_resize.shape)
+    # cv2.imwrite(pjoin(merge_root, name + '.jpg'), board)
+    # print('[Merge Completed] Input: %s Output: %s' % (img_path, pjoin(merge_root, name + '.jpg')))
+    logger.debug("[Merge Completed]")
     return board, components

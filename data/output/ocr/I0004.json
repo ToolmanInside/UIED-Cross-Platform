@@ -1,0 +1,359 @@
+{
+    "img_shape": [
+        2436,
+        1125,
+        3
+    ],
+    "texts": [
+        {
+            "id": 0,
+            "content": "10:02",
+            "column_min": 78,
+            "row_min": 48,
+            "column_max": 198,
+            "row_max": 91,
+            "width": 120,
+            "height": 43
+        },
+        {
+            "id": 1,
+            "content": "\u4e91\u8fb9\u6709\u4e2a\u5c0f\u5356\u94fa",
+            "column_min": 456,
+            "row_min": 315,
+            "column_max": 789,
+            "row_max": 361,
+            "width": 333,
+            "height": 46
+        },
+        {
+            "id": 2,
+            "content": "34\u4ebf",
+            "column_min": 284,
+            "row_min": 333,
+            "column_max": 374,
+            "row_max": 369,
+            "width": 90,
+            "height": 36
+        },
+        {
+            "id": 3,
+            "content": "\u82cf\u51b7\u672b",
+            "column_min": 546,
+            "row_min": 412,
+            "column_max": 663,
+            "row_max": 451,
+            "width": 117,
+            "height": 39
+        },
+        {
+            "id": 5,
+            "content": "No1l",
+            "column_min": 468,
+            "row_min": 515,
+            "column_max": 578,
+            "row_max": 546,
+            "width": 110,
+            "height": 31
+        },
+        {
+            "id": 4,
+            "content": "\u70ed\u95e8\u699c",
+            "column_min": 569,
+            "row_min": 511,
+            "column_max": 675,
+            "row_max": 546,
+            "width": 106,
+            "height": 35
+        },
+        {
+            "id": 6,
+            "content": "v:sulm2021",
+            "column_min": 453,
+            "row_min": 584,
+            "column_max": 674,
+            "row_max": 621,
+            "width": 221,
+            "height": 37
+        },
+        {
+            "id": 7,
+            "content": "\u4f60\u7684\u5b9d\u85cf\u7535",
+            "column_min": 456,
+            "row_min": 635,
+            "column_max": 670,
+            "row_max": 673,
+            "width": 214,
+            "height": 38
+        },
+        {
+            "id": 9,
+            "content": "2550",
+            "column_min": 556,
+            "row_min": 796,
+            "column_max": 646,
+            "row_max": 832,
+            "width": 90,
+            "height": 36
+        },
+        {
+            "id": 10,
+            "content": "5324",
+            "column_min": 824,
+            "row_min": 796,
+            "column_max": 916,
+            "row_max": 832,
+            "width": 92,
+            "height": 36
+        },
+        {
+            "id": 8,
+            "content": "105\u4e07",
+            "column_min": 280,
+            "row_min": 794,
+            "column_max": 383,
+            "row_max": 834,
+            "width": 103,
+            "height": 40
+        },
+        {
+            "id": 11,
+            "content": "\u58f0\u97f399+\u8be6\u60c5",
+            "column_min": 62,
+            "row_min": 960,
+            "column_max": 331,
+            "row_max": 1009,
+            "width": 269,
+            "height": 49
+        },
+        {
+            "id": 13,
+            "content": "'LIVE",
+            "column_min": 94,
+            "row_min": 1146,
+            "column_max": 163,
+            "row_max": 1172,
+            "width": 69,
+            "height": 26
+        },
+        {
+            "id": 12,
+            "content": "\u82cf\u51b7\u672b-:\u4f60\u7684\u597d\u8fd0\u6b63\u5728\u62ab\u8346\u65a9\u68d8\u7684",
+            "column_min": 196,
+            "row_min": 1136,
+            "column_max": 934,
+            "row_max": 1176,
+            "width": 738,
+            "height": 40
+        },
+        {
+            "id": 14,
+            "content": "\u4e16\u4e2d\u9022\u5c14\u96e8\u4e2d\u9022\u82b1",
+            "column_min": 249,
+            "row_min": 1314,
+            "column_max": 682,
+            "row_max": 1358,
+            "width": 433,
+            "height": 44
+        },
+        {
+            "id": 17,
+            "content": "01:46",
+            "column_min": 565,
+            "row_min": 1393,
+            "column_max": 658,
+            "row_max": 1428,
+            "width": 93,
+            "height": 35
+        },
+        {
+            "id": 15,
+            "content": "\u4eca\u5929[",
+            "column_min": 251,
+            "row_min": 1390,
+            "column_max": 368,
+            "row_max": 1429,
+            "width": 117,
+            "height": 39
+        },
+        {
+            "id": 16,
+            "content": ">21977C",
+            "column_min": 358,
+            "row_min": 1391,
+            "column_max": 549,
+            "row_max": 1429,
+            "width": 191,
+            "height": 38
+        },
+        {
+            "id": 18,
+            "content": "\u6210\u5e74\u4eba\"\u5206\u624b\"\u6f5c\u89c4\u5219",
+            "column_min": 249,
+            "row_min": 1542,
+            "column_max": 679,
+            "row_max": 1586,
+            "width": 430,
+            "height": 44
+        },
+        {
+            "id": 19,
+            "content": "1\u5929\u524d",
+            "column_min": 249,
+            "row_min": 1617,
+            "column_max": 347,
+            "row_max": 1658,
+            "width": 98,
+            "height": 41
+        },
+        {
+            "id": 20,
+            "content": "18142",
+            "column_min": 412,
+            "row_min": 1619,
+            "column_max": 518,
+            "row_max": 1658,
+            "width": 106,
+            "height": 39
+        },
+        {
+            "id": 21,
+            "content": "06:39",
+            "column_min": 582,
+            "row_min": 1617,
+            "column_max": 682,
+            "row_max": 1659,
+            "width": 100,
+            "height": 42
+        },
+        {
+            "id": 22,
+            "content": "\u4f60\u662f\u6211\u7528\u4f59\u5149\u5c31\u80fd\u770b\u6e05\u7684\u4eba",
+            "column_min": 248,
+            "row_min": 1769,
+            "column_max": 845,
+            "row_max": 1813,
+            "width": 597,
+            "height": 44
+        },
+        {
+            "id": 24,
+            "content": "115\u4e07",
+            "column_min": 412,
+            "row_min": 1848,
+            "column_max": 518,
+            "row_max": 1884,
+            "width": 106,
+            "height": 36
+        },
+        {
+            "id": 25,
+            "content": "00:37",
+            "column_min": 589,
+            "row_min": 1849,
+            "column_max": 686,
+            "row_max": 1885,
+            "width": 97,
+            "height": 36
+        },
+        {
+            "id": 23,
+            "content": "1\u5929\u524d",
+            "column_min": 249,
+            "row_min": 1845,
+            "column_max": 346,
+            "row_max": 1886,
+            "width": 97,
+            "height": 41
+        },
+        {
+            "id": 27,
+            "content": "SHENZHANG",
+            "column_min": 87,
+            "row_min": 2033,
+            "column_max": 174,
+            "row_max": 2047,
+            "width": 87,
+            "height": 14
+        },
+        {
+            "id": 26,
+            "content": "\u8bf4\u8c0elive",
+            "column_min": 243,
+            "row_min": 1992,
+            "column_max": 420,
+            "row_max": 2048,
+            "width": 177,
+            "height": 56
+        },
+        {
+            "id": 29,
+            "content": "88475",
+            "column_min": 421,
+            "row_min": 2077,
+            "column_max": 532,
+            "row_max": 2112,
+            "width": 111,
+            "height": 35
+        },
+        {
+            "id": 30,
+            "content": "04:21",
+            "column_min": 603,
+            "row_min": 2077,
+            "column_max": 694,
+            "row_max": 2112,
+            "width": 91,
+            "height": 35
+        },
+        {
+            "id": 28,
+            "content": "09-12",
+            "column_min": 252,
+            "row_min": 2075,
+            "column_max": 353,
+            "row_max": 2114,
+            "width": 101,
+            "height": 39
+        },
+        {
+            "id": 31,
+            "content": "\u65b0\u95fb",
+            "column_min": 72,
+            "row_min": 2220,
+            "column_max": 128,
+            "row_max": 2250,
+            "width": 56,
+            "height": 30
+        },
+        {
+            "id": 33,
+            "content": "\u65e9\u9910",
+            "column_min": 72,
+            "row_min": 2250,
+            "column_max": 129,
+            "row_max": 2280,
+            "width": 57,
+            "height": 30
+        },
+        {
+            "id": 32,
+            "content": "\u65e9\u62a5|10\u670820\u65e5\u65b0\u95fb\u65e9\u9910-\u4e2d\u56fd",
+            "column_min": 183,
+            "row_min": 2238,
+            "column_max": 735,
+            "row_max": 2283,
+            "width": 552,
+            "height": 45
+        },
+        {
+            "id": 34,
+            "content": "\u4e2d\u56fd\u65b0\u7f51\u7f51",
+            "column_min": 68,
+            "row_min": 2286,
+            "column_max": 135,
+            "row_max": 2300,
+            "width": 67,
+            "height": 14
+        }
+    ]
+}

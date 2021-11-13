@@ -5,31 +5,30 @@ from os.path import join as pjoin
 from random import randint as rint
 import matplotlib.pyplot as plt
 from logzero import logger
+import sys
+import base64
+import numpy as np
+sys.path.append("..")
 
-from match_elements.Element import Element
-import match_elements.matching as match
-
+from Element import Element
+import matching as match
 
 class GUIPair:
-    def __init__(self, ui_name, input_dir='data/input', output_dir='data/output'):
+    def __init__(self, input_figure_1, input_figure_2):
 
-        self.ui_name = ui_name
-        self.input_dir = input_dir
-        self.output_dir = output_dir
+        self.base64_figure_1 = input_figure_1
+        self.base64_figure_2 = input_figure_2
+        # self.ui_name = ui_name
+        self.figure_1 = cv2.imdecode(np.frombuffer(self.parse_base64_img(self.base64_figure_1), np.uint8), cv2.IMREAD_COLOR)
+        self.figure_2 = cv2.imdecode(np.frombuffer(self.parse_base64_img(self.base64_figure_2), np.uint8), cv2.IMREAD_COLOR)
+        
+        self.det_result_imgs_1 = {'text': None, 'non-text': None, 'merge': None}  # image visualization for different stages
+        self.det_result_data_1 = None  # {'elements':[], 'img_shape'}
+        self.det_result_imgs_2 = {'text': None, 'non-text': None, 'merge': None}  # image visualization for different stages
+        self.det_result_data_2 = None  # {'elements':[], 'img_shape'}
 
-        # for android GUI
-        self.img_path_android = pjoin(input_dir, 'A' + ui_name + '.jpg')
-        self.img_android = cv2.imread(self.img_path_android)
-        self.det_result_imgs_android = {'text': None, 'non-text': None, 'merge': None}  # image visualization for different stages
-        self.det_result_data_android = None  # {'elements':[], 'img_shape'}
-        # for ios GUI
-        self.img_path_ios = pjoin(input_dir, 'I' + ui_name + '.png')
-        self.img_ios = cv2.imread(self.img_path_ios)
-        self.det_result_imgs_ios = {'text': None, 'non-text': None, 'merge': None}      # image visualization for different stages
-        self.det_result_data_ios = None     # {'elements':[], 'img_shape'}
-
-        self.elements_android = []          # list of Element objects for android UI
-        self.elements_ios = []              # list of Element objects for ios UI
+        self.elements_1 = []          # list of Element objects for android UI
+        self.elements_2 = []              # list of Element objects for ios UI
         self.elements_mapping = {}          # {'id': Element}
         self.element_matching_pairs = []    # list of matching similar element pairs: [(ele_android, ele_ios)]
 
@@ -38,6 +37,10 @@ class GUIPair:
     *** Detect or Load Elements ***
     *******************************
     '''
+    def parse_base64_img(self, basestr):
+        img = base64.b64decode(bytes(basestr, encoding='utf-8'))
+        return img
+
     def element_detection(self, is_text=True, is_nontext=True, is_merge=True):
         if is_text:
             import detect_text.text_detection as text
@@ -45,23 +48,25 @@ class GUIPair:
             # paddle_cor = PaddleOCR(use_angle_cls=True, lang="ch")
             # self.det_result_imgs_android['text'] = text.text_detection_paddle(self.img_path_android, self.output_dir, paddle_cor=paddle_cor)
             # self.det_result_imgs_ios['text'] = text.text_detection_paddle(self.img_path_ios, self.output_dir, paddle_cor=paddle_cor)
-            self.det_result_imgs_android['text'] = text.text_detection_longce(self.img_path_android, self.output_dir)
-            self.det_result_imgs_ios['text'] = text.text_detection_longce(self.img_path_ios, self.output_dir)
+            self.det_result_imgs_1['text'] = text.text_detection_longce(self.base64_figure_1)
+            self.det_result_imgs_2['text'] = text.text_detection_longce(self.base64_figure_2)
         if is_nontext:
             import detect_compo.ip_region_proposal as ip
             key_params = {'min-grad': 6, 'ffl-block': 5, 'min-ele-area': 100, 'merge-contained-ele': True, 'resize_by_height': 900}
-            self.det_result_imgs_android['non-text'] = ip.compo_detection(self.img_path_android, self.output_dir, key_params)
-            self.det_result_imgs_ios['non-text'] = ip.compo_detection(self.img_path_ios, self.output_dir, key_params)
+            self.det_result_imgs_1['non-text'] = ip.compo_detection(self.figure_1, 'data/output', key_params)
+            self.det_result_imgs_2['non-text'] = ip.compo_detection(self.figure_2, 'data/output', key_params)
         if is_merge:
             import detect_merge.merge as merge
             # for android GUI
-            compo_path = pjoin(self.output_dir, 'ip', 'A' + str(self.ui_name) + '.json')
-            ocr_path = pjoin(self.output_dir, 'ocr', 'A' + str(self.ui_name) + '.json')
-            self.det_result_imgs_android['merge'], self.det_result_data_android = merge.merge(self.img_path_android, compo_path, ocr_path, pjoin(self.output_dir, 'merge'), is_remove_bar=True, is_paragraph=False)
+            # compo_path = pjoin(self.output_dir, 'ip', 'A' + str(self.ui_name) + '.json')
+            # ocr_path = pjoin(self.output_dir, 'ocr', 'A' + str(self.ui_name) + '.json')
+            self.det_result_imgs_1['merge'], self.det_result_data_1 = merge.merge(self.figure_1, self.det_result_imgs_1['non-text'], \
+            self.det_result_imgs_1['text'], merge_root=None, is_remove_bar=True, is_paragraph=False)
             # for ios GUI
-            compo_path = pjoin(self.output_dir, 'ip', 'I' + str(self.ui_name) + '.json')
-            ocr_path = pjoin(self.output_dir, 'ocr', 'I' + str(self.ui_name) + '.json')
-            self.det_result_imgs_ios['merge'], self.det_result_data_ios = merge.merge(self.img_path_ios, compo_path, ocr_path, pjoin(self.output_dir, 'merge'), is_remove_bar=True, is_paragraph=False)
+            # compo_path = pjoin(self.output_dir, 'ip', 'I' + str(self.ui_name) + '.json')
+            # ocr_path = pjoin(self.output_dir, 'ocr', 'I' + str(self.ui_name) + '.json')
+            self.det_result_imgs_2['merge'], self.det_result_data_2 = merge.merge(self.figure_2, self.det_result_imgs_2['non-text'], \
+            self.det_result_imgs_2['text'], merge_root=None, is_remove_bar=True, is_paragraph=False)
             # convert elements as Element objects
             self.cvt_elements()
 
@@ -86,20 +91,20 @@ class GUIPair:
         @ det_result_data: {'elements':[], 'img_shape'}
         '''
         class_map = {'Text': 't', 'Compo': 'c'}
-        for i, element in enumerate(self.det_result_data_android['compos']):
-            e = Element('a' + str(i) + class_map[element['class']], 'android', element['class'], element['position'], self.det_result_data_android['img_shape'])
+        for i, element in enumerate(self.det_result_data_1['compos']):
+            e = Element('a' + str(i) + class_map[element['class']], '1', element['class'], element['position'], self.det_result_data_1['img_shape'])
             if element['class'] == 'Text':
                 e.text_content = element['text_content']
-            e.get_clip(self.img_android)
-            self.elements_android.append(e)
+            e.get_clip(self.figure_1)
+            self.elements_1.append(e)
             self.elements_mapping[e.id] = e
 
-        for i, element in enumerate(self.det_result_data_ios['compos']):
-            e = Element('i' + str(i) + class_map[element['class']], 'ios', element['class'], element['position'], self.det_result_data_ios['img_shape'])
+        for i, element in enumerate(self.det_result_data_2['compos']):
+            e = Element('i' + str(i) + class_map[element['class']], '2', element['class'], element['position'], self.det_result_data_2['img_shape'])
             if element['class'] == 'Text':
                 e.text_content = element['text_content']
-            e.get_clip(self.img_ios)
-            self.elements_ios.append(e)
+            e.get_clip(self.figure_2)
+            self.elements_2.append(e)
             self.elements_mapping[e.id] = e
 
     def save_element_clips(self):
@@ -123,8 +128,9 @@ class GUIPair:
     ******************************
     '''
     def match_similar_elements(self, min_similarity_img=0.75, min_similarity_text=0.8):
-        for ele_a in self.elements_android:
-            for ele_b in self.elements_ios:
+        logger.debug("[Matching Similar Elements]")
+        for ele_a in self.elements_1:
+            for ele_b in self.elements_2:
                 # only match elements in the same category
                 if ele_b.matched_element is not None or ele_a.category != ele_b.category:
                     continue
@@ -143,6 +149,7 @@ class GUIPair:
                         self.element_matching_pairs.append((ele_a, ele_b))
                         ele_a.matched_element = ele_b
                         ele_b.matched_element = ele_a
+        logger.debug("[Matching Similar Elements Complete]")
 
     '''
     *********************

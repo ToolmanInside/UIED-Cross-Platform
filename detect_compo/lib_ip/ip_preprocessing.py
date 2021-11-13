@@ -29,6 +29,29 @@ def read_img(path, resize_height=None, kernel_size=None):
         print("*** Img Reading Failed ***\n")
         return None, None
 
+def read_img_2(img, resize_height = None, kernel_size = None):
+    def resize_by_height(org):
+        w_h_ratio = org.shape[1] / org.shape[0]
+        resize_w = resize_height * w_h_ratio
+        re = cv2.resize(org, (int(resize_w), int(resize_height)))
+        return re
+
+    try:
+        if kernel_size is not None:
+            img = cv2.medianBlur(img, kernel_size)
+        if img is None:
+            print("*** Image does not exist ***")
+            return None, None
+        if resize_height is not None:
+            img = resize_by_height(img)
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        return img, gray
+
+    except Exception as e:
+        print(e)
+        print("*** Img Reading Failed ***\n")
+        return None, None
+
 
 def gray_to_gradient(img):
     if len(img.shape) == 3:
