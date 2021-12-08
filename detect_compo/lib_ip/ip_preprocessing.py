@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 from config.CONFIG_UIED import Config
+from logzero import logger
 C = Config()
 
 
@@ -8,6 +9,7 @@ def read_img(path, resize_height=None, kernel_size=None):
 
     def resize_by_height(org):
         w_h_ratio = org.shape[1] / org.shape[0]
+        # logger.debug(f"w_h_ratio: {w_h_ratio}")
         resize_w = resize_height * w_h_ratio
         re = cv2.resize(org, (int(resize_w), int(resize_height)))
         return re
@@ -31,9 +33,10 @@ def read_img(path, resize_height=None, kernel_size=None):
 
 def read_img_2(img, resize_height = None, kernel_size = None):
     def resize_by_height(org):
-        w_h_ratio = org.shape[1] / org.shape[0]
+        w_h_ratio = org.shape[1] / org.shape[0] # org.shape: (y: 2300, x: 1160)
+        # logger.debug(f"whratio: {w_h_ratio}")
         resize_w = resize_height * w_h_ratio
-        re = cv2.resize(org, (int(resize_w), int(resize_height)))
+        re = cv2.resize(org, (int(resize_w), int(resize_height))) # resize shape: [x=450~, y=900]
         return re
 
     try:
@@ -43,7 +46,9 @@ def read_img_2(img, resize_height = None, kernel_size = None):
             print("*** Image does not exist ***")
             return None, None
         if resize_height is not None:
+            # logger.warn("ATTENTION2!")
             img = resize_by_height(img)
+            # img = img
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         return img, gray
 

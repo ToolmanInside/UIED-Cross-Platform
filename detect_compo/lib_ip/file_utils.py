@@ -3,6 +3,7 @@ import pandas as pd
 import json
 from os.path import join as pjoin
 import time
+from logzero import logger
 import cv2
 
 
@@ -42,14 +43,19 @@ def save_corners_json(file_path, compos):
 def return_corners_json(compos):
     img_shape = compos[0].image_shape
     output = {'img_shape': img_shape, 'compos': []}
+    large_compo_count = 0
 
     for compo in compos:
         c = {'id': compo.id, 'class': compo.category}
         (c['column_min'], c['row_min'], c['column_max'], c['row_max']) = compo.put_bbox()
         c['width'] = compo.width
         c['height'] = compo.height
+        c['area'] = int(compo.width) * int(compo.height)
+        # if c['area'] > 100000:
+        #     large_compo_count += 1
+        #     continue
         output['compos'].append(c)
-
+    logger.error(f"skip {large_compo_count} abnormally large compos!")
     return output
 
 

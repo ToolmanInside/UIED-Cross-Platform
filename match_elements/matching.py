@@ -1,6 +1,10 @@
 import cv2
+import numpy as np
 from difflib import SequenceMatcher
 from skimage.measure import compare_ssim
+from logzero import logger
+from sklearn.metrics.pairwise import cosine_similarity
+from keras.applications.resnet import ResNet50
 
 
 def dhash(image):
@@ -47,9 +51,14 @@ def compare_sift_or_surf(img1, img2, method, ratio=1.5, draw_match=False):
 
     # BFMatcher with default params
     bf = cv2.BFMatcher()
+    if des1 is None or des2 is None or len(des1) < 2 or len(des2) < 2:
+        return 0
+    # logger.debug(f"des1 {des1}\ndes2 {des2}")
+    # logger.debug(f"des1 size {des1.size} des2 size {des2.size}")
     matches = bf.knnMatch(des1, des2, k=2)
     # If there's a big difference between the best and second-best matches, this to be a quality match.
     valid_matches = []
+    # logger.debug(f"valid match {valid_matches}")
     for best, second in matches:
         if second.distance / best.distance > ratio:
             valid_matches.append(best)
@@ -62,7 +71,7 @@ def compare_sift_or_surf(img1, img2, method, ratio=1.5, draw_match=False):
     return len(valid_matches) / len(kp2)
 
 
-def image_similarity(img1, img2, method='dhash', is_gray=False,
+def image_similarity(img1, img2, model=None, method='dhash', is_gray=False,
                      draw_match=False, match_distance_ratio=1.5):
     similarity = -1  # from 0 to 1
     if method == 'dhash':
@@ -86,6 +95,13 @@ def image_similarity(img1, img2, method='dhash', is_gray=False,
         similarity = compare_sift_or_surf(img1, img2, 'sift', match_distance_ratio, draw_match=draw_match)
     elif method == 'surf':
         similarity = compare_sift_or_surf(img1, img2, 'surf', match_distance_ratio, draw_match=draw_match)
+    elif method == "resnet":
+        shape = (32,32)
+        img1 = cv2.resize(img1, shape)
+        img2 = cv2.resize(img2, shape)
+        encodings = model.predict(np.array([img1, img2]))
+        encodings = encodings.reshape((encodings.shape[0], -1))
+        similarity = cosine_similarity([encodings[0]], [encodings[1]])[0][0]
     return similarity
 
 

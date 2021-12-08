@@ -25,14 +25,20 @@ def save_detection_json(file_path, texts, img_shape):
     json.dump(output, f_out, indent=4)
 
 def return_detection_json(texts, img_shape):
+    large_box_count = 0
     output = {'img_shape': img_shape, 'texts': []}
     for text in texts:
-        c = {'id': text.id, 'content': text.content}
+        c = {'id': text.id, 'content': text.content.replace('"', '')}
         loc = text.location
         c['column_min'], c['row_min'], c['column_max'], c['row_max'] = loc['left'], loc['top'], loc['right'], loc['bottom']
         c['width'] = text.width
         c['height'] = text.height
+        c['area'] = int(text.width) * int(text.height)
+        # if c['area'] > 3000: # skip abnormally large text boxes
+        #     large_box_count += 1
+        #     continue
         output['texts'].append(c)
+    logger.error(f"skip {large_box_count} large text boxes!")
     return output
 
 def visualize_texts(org_img, texts, shown_resize_height=None, show=False, write_path=None):
@@ -196,6 +202,7 @@ def text_detection_longce(input_file, show=False):
         "image": img,
         "type": "base64"
     })
+    # logger.debug(img)
     headers = {
         "Authorization": None,
         "Content-Type": "application/json"

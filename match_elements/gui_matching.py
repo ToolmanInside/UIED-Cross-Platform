@@ -10,8 +10,8 @@ import base64
 import numpy as np
 sys.path.append("..")
 
-from Element import Element
-import matching as match
+from match_elements.Element import Element
+import match_elements.matching as match
 
 class GUIPair:
     def __init__(self, input_figure_1, input_figure_2):
@@ -31,6 +31,7 @@ class GUIPair:
         self.elements_2 = []              # list of Element objects for ios UI
         self.elements_mapping = {}          # {'id': Element}
         self.element_matching_pairs = []    # list of matching similar element pairs: [(ele_android, ele_ios)]
+        self.reverse_ratio = None
 
     '''
     *******************************
@@ -54,20 +55,30 @@ class GUIPair:
             import detect_compo.ip_region_proposal as ip
             key_params = {'min-grad': 6, 'ffl-block': 5, 'min-ele-area': 100, 'merge-contained-ele': True, 'resize_by_height': 900}
             self.det_result_imgs_1['non-text'] = ip.compo_detection(self.figure_1, 'data/output', key_params)
+            with open("det1.txt", 'w') as f:
+                print(self.det_result_imgs_1['non-text'], file = f)
+            # logger.debug(f"{self.det_result_imgs_1['non-text']}")
             self.det_result_imgs_2['non-text'] = ip.compo_detection(self.figure_2, 'data/output', key_params)
+            # logger.debug(f"{self.det_result_imgs_2['non-text']}")
+            
         if is_merge:
             import detect_merge.merge as merge
             # for android GUI
             # compo_path = pjoin(self.output_dir, 'ip', 'A' + str(self.ui_name) + '.json')
             # ocr_path = pjoin(self.output_dir, 'ocr', 'A' + str(self.ui_name) + '.json')
+            # logger.debug(f"{self.det_result_imgs_1['text']}")
             self.det_result_imgs_1['merge'], self.det_result_data_1 = merge.merge(self.figure_1, self.det_result_imgs_1['non-text'], \
             self.det_result_imgs_1['text'], merge_root=None, is_remove_bar=True, is_paragraph=False)
+            # logger.debug(f"{self.det_result_imgs_1['merge']}")
+            with open("merge1.txt", 'w') as f:
+                print(self.det_result_imgs_1['non-text'], file = f)
             # for ios GUI
             # compo_path = pjoin(self.output_dir, 'ip', 'I' + str(self.ui_name) + '.json')
             # ocr_path = pjoin(self.output_dir, 'ocr', 'I' + str(self.ui_name) + '.json')
             self.det_result_imgs_2['merge'], self.det_result_data_2 = merge.merge(self.figure_2, self.det_result_imgs_2['non-text'], \
             self.det_result_imgs_2['text'], merge_root=None, is_remove_bar=True, is_paragraph=False)
             # convert elements as Element objects
+            self.draw_detection_result()
             self.cvt_elements()
 
     def load_detection_result(self, data_path_android=None, data_path_ios=None):
@@ -90,8 +101,9 @@ class GUIPair:
         Convert detection result to Element objects
         @ det_result_data: {'elements':[], 'img_shape'}
         '''
-        class_map = {'Text': 't', 'Compo': 'c'}
+        class_map = {'Text': 't', 'Compo': 'c', 'Block': 'c'}
         for i, element in enumerate(self.det_result_data_1['compos']):
+            # logger.warning(f"{element['class']}")
             e = Element('a' + str(i) + class_map[element['class']], '1', element['class'], element['position'], self.det_result_data_1['img_shape'])
             if element['class'] == 'Text':
                 e.text_content = element['text_content']
@@ -127,29 +139,71 @@ class GUIPair:
     *** Match Similar Elements ***
     ******************************
     '''
-    def match_similar_elements(self, min_similarity_img=0.75, min_similarity_text=0.8):
-        logger.debug("[Matching Similar Elements]")
+    def match_similar_elements(self, model=None, min_similarity_img=0.75, min_similarity_text=0.8, img_sim_method='resnet'):
+        '''
+        @min_similarity_img: similarity threshold for Non-text elements
+        @min_similarity_text: similarity threshold for Text elements
+        @img_sim_method: the method used to calculate the similarity between two images
+            options: 'dhash', 'ssim', 'sift', 'surf'
+        '''
+        mark = np.full(len(self.elements_2), False)
+        count = 0
         for ele_a in self.elements_1:
-            for ele_b in self.elements_2:
+            for j, ele_b in enumerate(self.elements_2):
                 # only match elements in the same category
                 if ele_b.matched_element is not None or ele_a.category != ele_b.category:
+                    continue
+                if mark[j] or \
+                        max(ele_a.height, ele_b.height) / min(ele_a.height, ele_b.height) > 2 or max(ele_a.width, ele_b.width) / min(ele_a.width, ele_b.width) > 2:
                     continue
                 # use different method to calc the similarity of of images and texts
                 if ele_a.category == 'Compo':
                     # match non-text clip through image similarity
-                    compo_similarity = match.image_similarity(ele_a.clip, ele_b.clip, method='sift')
+                    compo_similarity = match.image_similarity(ele_a.clip, ele_b.clip, model = model, method=img_sim_method)
+                    # logger.debug(f"sim: {compo_similarity}")
+                    count += 1
                     if compo_similarity > min_similarity_img:
+                        # logger.debug("similar")
                         self.element_matching_pairs.append((ele_a, ele_b))
                         ele_a.matched_element = ele_b
                         ele_b.matched_element = ele_a
+                        mark[j] = True
+                        break
                 elif ele_a.category == 'Text':
                     # match text by through string similarity
                     text_similarity = match.text_similarity(ele_a.text_content, ele_b.text_content)
+                    count += 1
                     if text_similarity > min_similarity_text:
                         self.element_matching_pairs.append((ele_a, ele_b))
                         ele_a.matched_element = ele_b
                         ele_b.matched_element = ele_a
-        logger.debug("[Matching Similar Elements Complete]")
+                        mark[j] = True
+                        break
+        logger.debug("Matching Complete")
+
+    # def match_similar_elements(self, model = None, min_similarity_img=0.7, min_similarity_text=0.8):
+    #     logger.debug("[Matching Similar Elements]")
+    #     for ele_a in self.elements_1:
+    #         for ele_b in self.elements_2:
+    #             # only match elements in the same category
+    #             if ele_b.matched_element is not None or ele_a.category != ele_b.category:
+    #                 continue
+    #             # use different method to calc the similarity of of images and texts
+    #             if ele_a.category == 'Compo':
+    #                 # match non-text clip through image similarity
+    #                 compo_similarity = match.image_similarity(ele_a.clip, ele_b.clip, model=model, method='resnet')
+    #                 if compo_similarity > min_similarity_img:
+    #                     self.element_matching_pairs.append((ele_a, ele_b))
+    #                     ele_a.matched_element = ele_b
+    #                     ele_b.matched_element = ele_a
+    #             elif ele_a.category == 'Text':
+    #                 # match text by through string similarity
+    #                 text_similarity = match.text_similarity(ele_a.text_content, ele_b.text_content)
+    #                 if text_similarity > min_similarity_text:
+    #                     self.element_matching_pairs.append((ele_a, ele_b))
+    #                     ele_a.matched_element = ele_b
+    #                     ele_b.matched_element = ele_a
+    #     logger.debug("[Matching Similar Elements Complete]")
 
     '''
     *********************
@@ -158,34 +212,37 @@ class GUIPair:
     '''
     def show_detection_result(self):
         if self.det_result_imgs_android['merge'] is not None:
-            cv2.imshow('android', cv2.resize(self.det_result_imgs_android['merge'], (int(self.img_android.shape[1] * (800 / self.img_android.shape[0])), 800)))
-            cv2.imshow('ios', cv2.resize(self.det_result_imgs_ios['merge'], (int(self.img_ios.shape[1] * (800 / self.img_ios.shape[0])), 800)))
+            plt.imshow(cv2.resize(self.det_result_imgs_1['merge'], (int(self.figure_1.shape[1] * (800 / self.figure_1.shape[0])), 800)))
+            plt.imshow(cv2.resize(self.det_result_imgs_2['merge'], (int(self.figure_2.shape[1] * (800 / self.figure_2.shape[0])), 800)))
         elif self.det_result_data_android is not None:
             self.draw_detection_result()
-            cv2.imshow('android', cv2.resize(self.det_result_imgs_android['merge'], (int(self.img_android.shape[1] * (800 / self.img_android.shape[0])), 800)))
-            cv2.imshow('ios', cv2.resize(self.det_result_imgs_ios['merge'], (int(self.img_ios.shape[1] * (800 / self.img_ios.shape[0])), 800)))
+            plt.imshow(cv2.resize(self.det_result_imgs_1['merge'], (int(self.figure_1.shape[1] * (800 / self.figure_1.shape[0])), 800)))
+            plt.imshow(cv2.resize(self.det_result_imgs_2['merge'], (int(self.figure_2.shape[1] * (800 / self.figure_2.shape[0])), 800)))
         else:
             print('No detection result, run element_detection() or load_detection_result() first')
-        cv2.waitKey()
-        cv2.destroyAllWindows()
+        # cv2.waitKey()
+        # cv2.destroyAllWindows()
 
     def draw_detection_result(self, show_id=True):
         '''
         Draw detected elements based on det_result_data
         '''
         color_map = {'Compo': (0,255,0), 'Text': (0,0,255)}
-
-        ratio = self.img_android.shape[0] / self.det_result_data_android['img_shape'][0]
-        board = self.img_android.copy()
-        for i, element in enumerate(self.elements_android):
+        ratio = self.figure_1.shape[0] / self.det_result_data_1['img_shape'][0]
+        board = self.figure_1.copy()
+        logger.debug(f"Reverse Ratio: {ratio}")
+        self.reverse_ratio = ratio
+        for i, element in enumerate(self.elements_1):
             element.draw_element(board, ratio, color_map[element.category], show_id=show_id)
-        self.det_result_imgs_android['merge'] = board.copy()
+        self.det_result_imgs_1['merge'] = board.copy()
+        cv2.imwrite("img_1.png", self.det_result_imgs_1['merge'])
 
-        ratio = self.img_ios.shape[0] / self.det_result_data_ios['img_shape'][0]
-        board = self.img_ios.copy()
-        for i, element in enumerate(self.elements_ios):
+        ratio = self.figure_2.shape[0] / self.det_result_data_2['img_shape'][0]
+        board = self.figure_2.copy()
+        for i, element in enumerate(self.elements_2):
             element.draw_element(board, ratio, color_map[element.category], show_id=show_id)
-        self.det_result_imgs_ios['merge'] = board.copy()
+        self.det_result_imgs_2['merge'] = board.copy()
+        cv2.imwrite("img_2.png", self.det_result_imgs_2['merge'])
 
     def visualize_matched_element_pairs(self, line=-1):
         board_android = self.img_android.copy()
@@ -194,7 +251,7 @@ class GUIPair:
             color = (rint(0,255), rint(0,255), rint(0,255))
             pair[0].draw_element(board_android, color=color, line=line, show_id=False)
             pair[1].draw_element(board_ios, color=color, line=line, show_id=False)
-        logger.debug(board_android)
+        # logger.debug(board_android)
         plt.imshow(cv2.resize(board_android, (int(board_android.shape[1] * (800 / board_android.shape[0])), 800))) # android
         plt.imshow(cv2.resize(board_ios, (int(board_ios.shape[1] * (800 / board_ios.shape[0])), 800))) # ios
         # cv2.imshow('android', cv2.resize(board_android, (int(board_android.shape[1] * (800 / board_android.shape[0])), 800)))

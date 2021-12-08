@@ -34,4 +34,7 @@ form_data = json.dumps({
 
 logger.debug("send matching request")
 response = requests.post(url=post_url, headers=headers, data=form_data).text
+
+with open('pairs.txt', 'w') as f:
+    print(response, file = f)
 logger.debug("respose received")

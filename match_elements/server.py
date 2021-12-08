@@ -2,16 +2,25 @@ from flask import Flask, request
 import json
 import base64
 from gui_matching import GUIPair
+from keras.applications.resnet import ResNet50
+from logzero import logger
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 app = Flask("GUI-Matching")
+
+shape = (32,32,3)
+resnet = ResNet50(include_top = False, input_shape = shape)
+logger.debug("Load Model Successfully")
 
 def parse_base64_img(basestr):
     img = base64.b64decode(basestr)
     return img
 
-def result_processing(result):
+def result_processing(result, ratio):
     ele_pairs = {
-        "ele_pairs": list()
+        "ele_pairs": list(),
+        "ratio": ratio
     }
     for pair in result:
         pair_dict = dict()
@@ -53,8 +62,8 @@ def matching():
     # figure_2 = parse_base64_img(figure_2_base64)
     gui_pair = GUIPair(figure_1_base64, figure_2_base64)
     gui_pair.element_detection(True, True, True)
-    gui_pair.match_similar_elements()
-    result = result_processing(gui_pair.element_matching_pairs)
+    gui_pair.match_similar_elements(model = resnet)
+    result = result_processing(gui_pair.element_matching_pairs, gui_pair.reverse_ratio)
     return json.dumps(result).encode('utf-8').decode("unicode-escape")
 
 def main():

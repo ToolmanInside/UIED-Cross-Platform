@@ -3,6 +3,7 @@ from os.path import join as pjoin
 import time
 import json
 import numpy as np
+from logzero import logger
 
 import detect_compo.lib_ip.ip_preprocessing as pre
 import detect_compo.lib_ip.ip_draw as draw
@@ -55,6 +56,7 @@ def compo_detection(input_img_path, output_root, uied_params,
     # *** Step 3 *** results refinement
     uicompos = det.compo_filter(uicompos, min_area=int(uied_params['min-ele-area']), img_shape=binary.shape)
     uicompos = det.merge_intersected_compos(uicompos)
+    uicompos = det.compo_filter(uicompos, min_area=int(uied_params['min-ele-area']), img_shape=binary.shape)
     det.compo_block_recognition(binary, uicompos)
     if uied_params['merge-contained-ele']:
         uicompos = det.rm_contained_compos_not_in_block(uicompos)
