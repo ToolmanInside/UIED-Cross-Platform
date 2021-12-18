@@ -53,7 +53,8 @@ class GUIPair:
             self.det_result_imgs_2['text'] = text.text_detection_longce(self.base64_figure_2)
         if is_nontext:
             import detect_compo.ip_region_proposal as ip
-            key_params = {'min-grad': 6, 'ffl-block': 5, 'min-ele-area': 100, 'merge-contained-ele': True, 'resize_by_height': 900}
+            key_params = {'min-grad': 6, 'ffl-block': 5, 'min-ele-area': 100, 'merge-contained-ele': False, 'resize_by_height': 900}
+            # key_params = {'min-grad': 6, 'ffl-block': 5, 'min-ele-area': 100, 'merge-contained-ele': False}
             self.det_result_imgs_1['non-text'] = ip.compo_detection(self.figure_1, 'data/output', key_params)
             with open("det1.txt", 'w') as f:
                 print(self.det_result_imgs_1['non-text'], file = f)
@@ -101,7 +102,8 @@ class GUIPair:
         Convert detection result to Element objects
         @ det_result_data: {'elements':[], 'img_shape'}
         '''
-        class_map = {'Text': 't', 'Compo': 'c', 'Block': 'c'}
+        class_map = {'Text': 't', 'Compo': 'c', 'Block': 'b'}
+        # logger.debug(f"{self.det_result_data_1['compos']}")
         for i, element in enumerate(self.det_result_data_1['compos']):
             # logger.warning(f"{element['class']}")
             e = Element('a' + str(i) + class_map[element['class']], '1', element['class'], element['position'], self.det_result_data_1['img_shape'])
@@ -111,6 +113,7 @@ class GUIPair:
             self.elements_1.append(e)
             self.elements_mapping[e.id] = e
 
+        # logger.debug(f"{self.det_result_data_2['compos']}")
         for i, element in enumerate(self.det_result_data_2['compos']):
             e = Element('i' + str(i) + class_map[element['class']], '2', element['class'], element['position'], self.det_result_data_2['img_shape'])
             if element['class'] == 'Text':
@@ -139,47 +142,90 @@ class GUIPair:
     *** Match Similar Elements ***
     ******************************
     '''
-    def match_similar_elements(self, model=None, min_similarity_img=0.75, min_similarity_text=0.8, img_sim_method='resnet'):
+    def match_similar_elements(self, model=None, min_similarity_img=0.75, min_similarity_text=0.8, del_prev = True, img_sim_method='resnet'):
         '''
         @min_similarity_img: similarity threshold for Non-text elements
         @min_similarity_text: similarity threshold for Text elements
         @img_sim_method: the method used to calculate the similarity between two images
             options: 'dhash', 'ssim', 'sift', 'surf'
         '''
+        if del_prev:
+            self.element_matching_pairs = []
+            for ele in self.elements_2 + self.elements_1:
+                ele.matched_element = None
+
+        logger.debug("Encoding Elements")
+        clips = []
+        no_type_1 = 0
+        for ele in self.elements_1 + self.elements_2:
+            if ele.category == "Compo":
+                clips.append(cv2.resize(ele.clip, (32,32)))
+                if ele.ui_type == '1':
+                    no_type_1 += 1
+        encodings = model.predict(np.array(clips))
+        encodings = encodings.reshape((encodings.shape[0], -1))
+        # tmp_x = [x for x in self.elements_1 if x.category == "Compo"]
+        # tmp_y = [x for x in self.elements_2 if x.category == "Compo"]
+        # logger.debug(f"Element_android length: {len(tmp_x)}")   
+        # logger.debug(f"Element_ios length: {len(tmp_y)}") 
+        encodings_1 = encodings[:no_type_1]
+        # logger.debug(f"Encoding_1 length: {len(encodings_1)}")
+        encodings_2 = encodings[no_type_1:]
+        # logger.debug(f"Encoding_2 length: {len(encodings_2)}")
+        logger.debug("Encoding Complete")
+
+        logger.debug("Start Matching")
         mark = np.full(len(self.elements_2), False)
-        count = 0
-        for ele_a in self.elements_1:
+        n_compos = 0
+        n_texts = 0
+        for i, ele_a in enumerate(self.elements_1):
+            compo_list = list()
+            text_list = list()
             for j, ele_b in enumerate(self.elements_2):
                 # only match elements in the same category
                 if ele_b.matched_element is not None or ele_a.category != ele_b.category:
                     continue
-                if mark[j] or \
-                        max(ele_a.height, ele_b.height) / min(ele_a.height, ele_b.height) > 2 or max(ele_a.width, ele_b.width) / min(ele_a.width, ele_b.width) > 2:
+                height_ratio = max(ele_a.height, ele_b.height) / min(ele_a.height, ele_b.height)
+                width_ratio = max(ele_a.width, ele_b.width) / min(ele_a.width, ele_b.width)
+                aspect_ratio = max(ele_a.aspect_ratio, ele_b.aspect_ratio) / min(ele_a.aspect_ratio, ele_b.aspect_ratio)
+                if mark[j] or height_ratio > 1.5 or width_ratio > 1.5 or aspect_ratio > 1.5:
                     continue
                 # use different method to calc the similarity of of images and texts
                 if ele_a.category == 'Compo':
+                    if j >= len(encodings_2):
+                    # logger.warning("Index out of range")
+                        continue
                     # match non-text clip through image similarity
-                    compo_similarity = match.image_similarity(ele_a.clip, ele_b.clip, model = model, method=img_sim_method)
-                    # logger.debug(f"sim: {compo_similarity}")
-                    count += 1
+                    # compo_similarity = match.image_similarity(ele_a.clip, ele_b.clip, model = model, method=img_sim_method)
+                    # logger.warning((i, j))
+                    compo_similarity = match.resnet_similarity(encodings_1[i], encodings_2[j])
                     if compo_similarity > min_similarity_img:
-                        # logger.debug("similar")
-                        self.element_matching_pairs.append((ele_a, ele_b))
-                        ele_a.matched_element = ele_b
-                        ele_b.matched_element = ele_a
-                        mark[j] = True
-                        break
+                        n_compos += 1
+                        compo_list.append((ele_a, ele_b, j, round(compo_similarity, 3)))
+
                 elif ele_a.category == 'Text':
                     # match text by through string similarity
                     text_similarity = match.text_similarity(ele_a.text_content, ele_b.text_content)
-                    count += 1
                     if text_similarity > min_similarity_text:
-                        self.element_matching_pairs.append((ele_a, ele_b))
-                        ele_a.matched_element = ele_b
-                        ele_b.matched_element = ele_a
-                        mark[j] = True
-                        break
-        logger.debug("Matching Complete")
+                        n_texts += 1
+                        text_list.append((ele_a, ele_b, j, round(text_similarity, 3)))
+
+            # compo_list: [(ele_a, ele_b, j, round(compo_similarity, 3)), ...]
+            # text_list: [(ele_a, ele_b, j, round(text_similarity, 3)), ...]
+            compo_list.sort(key = lambda x: x[3], reverse = True)
+            text_list.sort(key = lambda x: x[3], reverse = True)
+            if len(compo_list) > 0:
+                self.element_matching_pairs.append((compo_list[0][0], compo_list[0][1]))
+                compo_list[0][0].matched_element = compo_list[0][1]
+                compo_list[0][1].matched_element = compo_list[0][0]
+                mark[compo_list[0][2]] = True
+            if len(text_list) > 0:
+                self.element_matching_pairs.append((text_list[0][0], text_list[0][1]))
+                text_list[0][0].matched_element = text_list[0][1]
+                text_list[0][1].matched_element = text_list[0][0]
+                mark[text_list[0][2]] = True
+
+        logger.debug('[Similar Elements Matching] Method:%s Paired Text:%d, Paired Compos:%d' % (img_sim_method, n_texts, n_compos))
 
     # def match_similar_elements(self, model = None, min_similarity_img=0.7, min_similarity_text=0.8):
     #     logger.debug("[Matching Similar Elements]")
@@ -230,16 +276,20 @@ class GUIPair:
         color_map = {'Compo': (0,255,0), 'Text': (0,0,255)}
         ratio = self.figure_1.shape[0] / self.det_result_data_1['img_shape'][0]
         board = self.figure_1.copy()
-        logger.debug(f"Reverse Ratio: {ratio}")
+        # logger.debug(f"Reverse Ratio: {ratio}")
         self.reverse_ratio = ratio
+        # logger.debug(f"{self.elements_1}")
         for i, element in enumerate(self.elements_1):
+            logger.debug("draw_1")
             element.draw_element(board, ratio, color_map[element.category], show_id=show_id)
         self.det_result_imgs_1['merge'] = board.copy()
         cv2.imwrite("img_1.png", self.det_result_imgs_1['merge'])
 
         ratio = self.figure_2.shape[0] / self.det_result_data_2['img_shape'][0]
         board = self.figure_2.copy()
+        # logger.debug(f"{self.elements_2}")
         for i, element in enumerate(self.elements_2):
+            logger.debug("draw_2")
             element.draw_element(board, ratio, color_map[element.category], show_id=show_id)
         self.det_result_imgs_2['merge'] = board.copy()
         cv2.imwrite("img_2.png", self.det_result_imgs_2['merge'])

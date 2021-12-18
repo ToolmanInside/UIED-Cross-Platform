@@ -11,9 +11,11 @@ class Element:
         self.width = self.col_max - self.col_min
         self.height = self.row_max - self.row_min
         self.area = self.width * self.height
+        self.aspect_ratio = round(self.width / self.height, 3)
 
         self.img_size = img_size    # the size of the resized image while detection
         self.clip = None
+        self.encoding = None
 
         self.ui_type = ui_type          # android/ios
         self.matched_element = None     # the matched Element in another ui

@@ -55,7 +55,7 @@ def return_corners_json(compos):
         #     large_compo_count += 1
         #     continue
         output['compos'].append(c)
-    logger.error(f"skip {large_compo_count} abnormally large compos!")
+    # logger.error(f"skip {large_compo_count} abnormally large compos!")
     return output
 
 

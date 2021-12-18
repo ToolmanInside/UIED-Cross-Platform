@@ -3,14 +3,19 @@ import json
 import base64
 from gui_matching import GUIPair
 from keras.applications.resnet import ResNet50
+from keras.applications.vgg16 import VGG16
+from classification_models.keras import Classifiers
 from logzero import logger
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 app = Flask("GUI-Matching")
 
 shape = (32,32,3)
-resnet = ResNet50(include_top = False, input_shape = shape)
+# resnet = ResNet50(include_top = False, input_shape = shape)
+# resnet = VGG16(include_top = False, input_shape = shape)
+Resnet, _ = Classifiers.get('resnet18')
+resnet = Resnet(shape, include_top=False)
 logger.debug("Load Model Successfully")
 
 def parse_base64_img(basestr):

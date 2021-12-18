@@ -99,9 +99,18 @@ def image_similarity(img1, img2, model=None, method='dhash', is_gray=False,
         shape = (32,32)
         img1 = cv2.resize(img1, shape)
         img2 = cv2.resize(img2, shape)
+        # logger.debug("Start Encoding")
         encodings = model.predict(np.array([img1, img2]))
+        # logger.debug(f"1 {encodings}")
         encodings = encodings.reshape((encodings.shape[0], -1))
+        # logger.debug(f"2 {encodings}")
+        # logger.debug("Complete Encoding")
         similarity = cosine_similarity([encodings[0]], [encodings[1]])[0][0]
+        # logger.debug("Complete Cosine Compare")
+    return similarity
+
+def resnet_similarity(encoding_1, encoding_2):
+    similarity = cosine_similarity([encoding_1], [encoding_2])[0][0]
     return similarity
 
 

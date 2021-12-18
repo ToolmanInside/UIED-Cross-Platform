@@ -38,7 +38,7 @@ def return_detection_json(texts, img_shape):
         #     large_box_count += 1
         #     continue
         output['texts'].append(c)
-    logger.error(f"skip {large_box_count} large text boxes!")
+    # logger.error(f"skip {large_box_count} large text boxes!")
     return output
 
 def visualize_texts(org_img, texts, shown_resize_height=None, show=False, write_path=None):

@@ -219,6 +219,7 @@ def merge(img_path, compo_path, text_path, merge_root=None, is_paragraph=False, 
         element = Element(ele_id, (text['column_min'], text['row_min'], text['column_max'], text['row_max']), 'Text', text_content=text['content'])
         texts.append(element)
         ele_id += 1
+    # logger.debug(f"{text_json['img_shape']}")
     if compo_json['img_shape'] != text_json['img_shape']:
         resize_ratio = compo_json['img_shape'][0] / text_json['img_shape'][0]
         for text in texts:
